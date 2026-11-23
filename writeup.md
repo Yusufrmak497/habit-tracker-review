@@ -90,4 +90,4 @@ semantics, invisible names, max length, `fullmatch`/wrong-type tests. I rejected
 each for a stated reason.
 
 ## 6. What I learned
-<!-- Yusuf: 3–5 sentences on combining guardrails with LLM review, and your comfort trusting AI reviews. -->
+The guardrails (black, ruff, pytest) only check that the code is well formed and that the tests pass, and the regex that accepted Arabic digits went through all of them; I only found that bug by reading the code line by line. The human and the AI caught different things: the AI didn't flag the Unicode-digit issue, but it found the invisible-character names and the year-boundary test that I had missed, and we both noticed the missing name length limit. Its 27 comments were a fast second pair of eyes, though about a third of them were nits I had to triage. So I trust AI review as an assistant but not as the final word: it lists obvious gaps quickly, it can miss subtle logic bugs, and its verdicts weren't consistent, so the final approval still has to come from a person.
