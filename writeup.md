@@ -4,8 +4,8 @@
 
 > **Process note:** I used Claude Code throughout. One-shot `claude -p` sessions did the implementation, and the
 > line-by-line review and the fixes were done in a separate Claude Code session that I directed. The AI
-> reviewer was another, fresh Claude Code session given only the diff and a reviewer prompt
-> (see §4 on why it is not Graphite).
+> reviewers were **CodeRabbit** (the course default, installed on the repo) and, as a second opinion,
+> a fresh Claude Code session given only the diff and a reviewer prompt (see §4).
 
 ## 1. Guardrails (Part I)
 | Command | What it catches |
@@ -25,7 +25,7 @@ ended with `✖ guardrails FAILED` and exit code 1.
 | PR | Branch | Agent's one-shot commit | Review-fix commits | Tests |
 |---|---|---|---|---|
 | [#1 Streak (Task 1)](https://github.com/Yusufrmak497/habit-tracker-review/pull/1) | `feature/streak` | `edff38f` | `f22b2e8`, `3ae1d42` | 13 passed |
-| [#2 Validation (Task 2)](https://github.com/Yusufrmak497/habit-tracker-review/pull/2) | `feature/validation` | `34c1d0b` | `8c5a7be`, `fb66396` | 24 passed |
+| [#2 Validation (Task 2)](https://github.com/Yusufrmak497/habit-tracker-review/pull/2) | `feature/validation` | `34c1d0b` | `8c5a7be`, `fb66396`, `22b4734` (CodeRabbit) | 33 passed |
 
 The PR descriptions (problem, approach, testing, tradeoffs) are in [`docs/prs/`](docs/prs/).
 The one-shot prompts are in `evidence/prompt-*.txt`. Each prompt was the task text from `docs/TASKS.md`
@@ -48,12 +48,26 @@ plus "run scripts/check.sh until it passes, do not commit".
 | 2 | tests | Same shared-DB problem as in Streak | test gap | **Fixed** (same fixture) |
 | 3 | `HabitIn.name` | No maximum length | robustness | Documented, then fixed after the AI review raised it too |
 
-## 4. AI reviewer
+## 4. AI reviewers
+### CodeRabbit (primary)
+Installed on the public repo and triggered with `@coderabbitai review` on both PRs; its comments are on the PRs.
+- **Streak (#1):** no actionable comments. Its security note was that the route loads the habit's whole
+  check-in history to compute one number, which is the same perf point as my manual finding #4.
+- **Validation (#2):** 2 actionable comments, **both real**, both of which my review and the Claude reviewer missed:
+  1. `main.py:62`: a name of only `U+034F` (combining grapheme joiner) passed, because Python treats
+     that mark as printable. Fixed: a name now needs at least one letter, number, punctuation or symbol.
+  2. `main.py:75`: `v.strip()` ran *before* the format check, so `"2026-09-22\n"` and `" 2026-09-22 "` were
+     accepted. Fixed: the submitted string must itself be `YYYY-MM-DD`.
+
+  I reproduced both (HTTP 200), added 8 regression tests that failed before the fix, and pushed `22b4734`;
+  each CodeRabbit thread has a "Fixed in 22b4734" reply.
+
+### Claude Code reviewer (second opinion)
 **Tool:** Claude Code in a fresh session (`claude -p`) with a reviewer prompt, read-only tools, and only the
 PR diff (`git diff main...HEAD`). It produced GitHub-style `file:line [severity]` comments. The full output is in
 [`evidence/ai-review-streak.md`](evidence/ai-review-streak.md) and
 [`evidence/ai-review-validation.md`](evidence/ai-review-validation.md).
-The default, Graphite Diamond, needs its GitHub app installed through a browser sign-up. The same comments are posted on
+The same comments are posted on
 [PR #1](https://github.com/Yusufrmak497/habit-tracker-review/pull/1) and
 [PR #2](https://github.com/Yusufrmak497/habit-tracker-review/pull/2).
 
@@ -89,5 +103,9 @@ semantics, invisible names, max length, `fullmatch`/wrong-type tests. I rejected
 `datetime.date`, which changes the stored value path; a lifespan hook for `init_db`; `response_model`; stylistic nits),
 each for a stated reason.
 
+**CodeRabbit vs. Claude reviewer vs. me:** CodeRabbit was far quieter (2 comments vs. 27) but both
+of its comments were real bugs, and both sit in the same "invisible/odd Unicode input" area where my own
+best finding (the Arabic-digit regex) was. None of the three reviews caught everything alone.
+
 ## 6. What I learned
-The guardrails (black, ruff, pytest) only check that the code is well formed and that the tests pass, and the regex that accepted Arabic digits went through all of them; I only found that bug by reading the code line by line. The human and the AI caught different things: the AI didn't flag the Unicode-digit issue, but it found the invisible-character names and the year-boundary test that I had missed, and we both noticed the missing name length limit. Its 27 comments were a fast second pair of eyes, though about a third of them were nits I had to triage. So I trust AI review as an assistant but not as the final word: it lists obvious gaps quickly, it can miss subtle logic bugs, and its verdicts weren't consistent, so the final approval still has to come from a person.
+The guardrails (black, ruff, pytest) only check that the code is well formed and that the tests pass, and the regex that accepted Arabic digits went through all of them; I only found that bug by reading the code line by line. The human and the AI caught different things: the AI didn't flag the Unicode-digit issue, but it found the invisible-character names and the year-boundary test that I had missed, and we both noticed the missing name length limit. The Claude reviewer's 27 comments were a fast second pair of eyes, though about a third were nits I had to triage, while CodeRabbit posted only 2 comments and both were real bugs that everyone else had missed. So I trust AI review as an assistant but not as the final word: it lists obvious gaps quickly, it can miss subtle logic bugs, and its verdicts weren't consistent, so the final approval still has to come from a person.
