@@ -99,5 +99,23 @@ def test_streak_crosses_month_boundary(monkeypatch):
 
 
 def test_streak_unknown_habit_404():
-    r = client.get("/habits/1/streak")
+    r = client.get("/habits/99999/streak")
     assert r.status_code == 404
+
+
+def test_streak_crosses_year_boundary(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: date(2027, 1, 1))
+    hid = _new_habit()
+    for day in ["2026-12-30", "2026-12-31", "2027-01-01"]:
+        _checkin(hid, day)
+    assert client.get(f"/habits/{hid}/streak").json()["streak"] == 3
+
+
+def test_streak_ignores_other_habits(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: FIXED_TODAY)
+    a, b = _new_habit("A"), _new_habit("B")
+    _checkin(a, "2026-09-22")
+    for day in ["2026-09-20", "2026-09-21"]:
+        _checkin(b, day)
+    assert client.get(f"/habits/{a}/streak").json()["streak"] == 1
+    assert client.get(f"/habits/{b}/streak").json()["streak"] == 0

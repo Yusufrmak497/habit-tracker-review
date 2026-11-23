@@ -97,6 +97,10 @@ def today() -> date:
 
 @app.get("/habits/{habit_id}/streak")
 def get_streak(habit_id: int):
+    """Consecutive days with a check-in, counting back from today (server-local date).
+
+    If today has no check-in yet, the streak is 0 (spec: "up to and including today").
+    """
     with closing(get_db()) as conn:
         habit = conn.execute("SELECT id FROM habits WHERE id = ?", (habit_id,)).fetchone()
         if habit is None:
