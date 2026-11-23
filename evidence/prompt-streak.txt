@@ -1,0 +1,1 @@
+Implement this task in main.py and add tests in test_main.py: "Streak — GET /habits/{id}/streak returns the current run of consecutive days (up to and including today) that have a check-in." Run scripts/check.sh until it passes. Do not commit.
