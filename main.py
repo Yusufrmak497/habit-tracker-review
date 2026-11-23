@@ -10,12 +10,15 @@ Test:
     pytest
 """
 
+import re
 import sqlite3
+import unicodedata
 from contextlib import closing
+from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 DB_PATH = Path(__file__).parent / "habits.db"
 
@@ -46,12 +49,40 @@ def init_db() -> None:
 init_db()
 
 
+MAX_NAME_LENGTH = 100
+ISO_DAY_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+
+
 class HabitIn(BaseModel):
     name: str
+
+    @field_validator("name")
+    @classmethod
+    def name_not_blank(cls, v: str) -> str:
+        v = v.strip()
+        # Needs at least one letter, number, punctuation or symbol: names made only of
+        # combining marks or format characters (e.g. U+034F, U+200B) would render blank.
+        if not any(unicodedata.category(c)[0] in "LNPS" for c in v):
+            raise ValueError("habit name must not be empty")
+        if len(v) > MAX_NAME_LENGTH:
+            raise ValueError(f"habit name must be at most {MAX_NAME_LENGTH} characters")
+        return v
 
 
 class CheckinIn(BaseModel):
     day: str  # ISO date, e.g. "2026-09-22"
+
+    @field_validator("day")
+    @classmethod
+    def day_is_iso_date(cls, v: str) -> str:
+        # No strip(): the submitted string itself must be exactly YYYY-MM-DD.
+        if not ISO_DAY_RE.fullmatch(v):
+            raise ValueError("day must be an ISO date in YYYY-MM-DD format, e.g. 2026-09-22")
+        try:
+            date.fromisoformat(v)
+        except ValueError:
+            raise ValueError(f"day {v!r} is not a valid calendar date") from None
+        return v
 
 
 @app.post("/habits")
