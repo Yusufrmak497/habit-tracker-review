@@ -1,0 +1,88 @@
+$ scripts/check.sh   # with a deliberately failing test, an unused import and bad formatting
+▶ black --check
+--- main.py	2026-11-23 19:24:12.630160+00:00
++++ main.py	2026-11-23 19:24:12.883832+00:00
+@@ -86,7 +86,9 @@
+         rows = conn.execute(
+             "SELECT day FROM checkins WHERE habit_id = ? ORDER BY day", (habit_id,)
+         ).fetchall()
+     return [r["day"] for r in rows]
+ 
++
+ import os
+-x=  1
++
++x = 1
+would reformat main.py
+
+Oh no! 💥 💔 💥
+1 file would be reformatted, 1 file would be left unchanged.
+▶ ruff check
+E402 Module level import not at top of file
+  --> main.py:91:1
+   |
+89 |     return [r["day"] for r in rows]
+90 |
+91 | import os
+   | ^^^^^^^^^
+92 | x=  1
+   |
+help: Move module level imports to top of file
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> main.py:91:1
+   |
+89 |     return [r["day"] for r in rows]
+90 |
+91 | import os
+   | ^^^^^^^^^
+92 | x=  1
+   |
+help: Organize imports
+   |
+91 | import os
+92 +
+93 | x=  1
+   |
+
+F401 [*] `os` imported but unused
+  --> main.py:91:8
+   |
+89 |     return [r["day"] for r in rows]
+90 |
+91 | import os
+   |        ^^
+92 | x=  1
+   |
+help: Remove unused import: `os`
+   |
+90 |
+   - import os
+91 | x=  1
+   |
+
+Found 3 errors.
+[*] 2 fixable with `--fix`.
+▶ pytest
+.F.                                                                      [100%]
+=================================== FAILURES ===================================
+______________________________ test_checkin_flow _______________________________
+
+    def test_checkin_flow():
+        hid = client.post("/habits", json={"name": "Stretch"}).json()["id"]
+        r = client.post(f"/habits/{hid}/checkin", json={"day": "2026-09-22"})
+        assert r.status_code == 200
+        r2 = client.get(f"/habits/{hid}/checkins")
+>       assert r2.json() == ["2026-09-23"]
+E       AssertionError: assert ['2026-09-22'] == ['2026-09-23']
+E         
+E         At index 0 diff: '2026-09-22' != '2026-09-23'
+E         Use -v to get more diff
+
+test_main.py:22: AssertionError
+
+=========================== short test summary info ============================
+FAILED test_main.py::test_checkin_flow - AssertionError: assert ['2026-09-22'...
+1 failed, 2 passed, 1 warning in 0.17s
+✖ guardrails FAILED
+[exit code: 1]
