@@ -1,5 +1,8 @@
+from datetime import date
+
 from fastapi.testclient import TestClient
 
+import main
 from main import app
 
 client = TestClient(app)
@@ -25,3 +28,94 @@ def test_checkin_flow():
 def test_checkin_unknown_habit_404():
     r = client.post("/habits/99999/checkin", json={"day": "2026-09-22"})
     assert r.status_code == 404
+
+
+FIXED_TODAY = date(2026, 9, 22)
+
+
+def _new_habit(name="Streak habit"):
+    return client.post("/habits", json={"name": name}).json()["id"]
+
+
+def _checkin(hid, day):
+    r = client.post(f"/habits/{hid}/checkin", json={"day": day})
+    assert r.status_code == 200
+
+
+def test_streak_no_checkins_is_zero(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: FIXED_TODAY)
+    hid = _new_habit()
+    r = client.get(f"/habits/{hid}/streak")
+    assert r.status_code == 200
+    assert r.json() == {"habit_id": hid, "streak": 0}
+
+
+def test_streak_counts_consecutive_days_including_today(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: FIXED_TODAY)
+    hid = _new_habit()
+    for day in ["2026-09-20", "2026-09-21", "2026-09-22"]:
+        _checkin(hid, day)
+    assert client.get(f"/habits/{hid}/streak").json()["streak"] == 3
+
+
+def test_streak_stops_at_gap(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: FIXED_TODAY)
+    hid = _new_habit()
+    for day in ["2026-09-18", "2026-09-19", "2026-09-21", "2026-09-22"]:
+        _checkin(hid, day)
+    assert client.get(f"/habits/{hid}/streak").json()["streak"] == 2
+
+
+def test_streak_zero_when_today_missing(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: FIXED_TODAY)
+    hid = _new_habit()
+    for day in ["2026-09-20", "2026-09-21"]:
+        _checkin(hid, day)
+    assert client.get(f"/habits/{hid}/streak").json()["streak"] == 0
+
+
+def test_streak_ignores_duplicates_and_future_days(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: FIXED_TODAY)
+    hid = _new_habit()
+    for day in ["2026-09-21", "2026-09-22", "2026-09-22", "2026-09-23"]:
+        _checkin(hid, day)
+    assert client.get(f"/habits/{hid}/streak").json()["streak"] == 2
+
+
+def test_streak_ignores_malformed_days(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: FIXED_TODAY)
+    hid = _new_habit()
+    for day in ["not-a-date", "2026-09-22"]:
+        _checkin(hid, day)
+    assert client.get(f"/habits/{hid}/streak").json()["streak"] == 1
+
+
+def test_streak_crosses_month_boundary(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: date(2026, 10, 1))
+    hid = _new_habit()
+    for day in ["2026-09-29", "2026-09-30", "2026-10-01"]:
+        _checkin(hid, day)
+    assert client.get(f"/habits/{hid}/streak").json()["streak"] == 3
+
+
+def test_streak_unknown_habit_404():
+    r = client.get("/habits/99999/streak")
+    assert r.status_code == 404
+
+
+def test_streak_crosses_year_boundary(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: date(2027, 1, 1))
+    hid = _new_habit()
+    for day in ["2026-12-30", "2026-12-31", "2027-01-01"]:
+        _checkin(hid, day)
+    assert client.get(f"/habits/{hid}/streak").json()["streak"] == 3
+
+
+def test_streak_ignores_other_habits(monkeypatch):
+    monkeypatch.setattr(main, "today", lambda: FIXED_TODAY)
+    a, b = _new_habit("A"), _new_habit("B")
+    _checkin(a, "2026-09-22")
+    for day in ["2026-09-20", "2026-09-21"]:
+        _checkin(b, day)
+    assert client.get(f"/habits/{a}/streak").json()["streak"] == 1
+    assert client.get(f"/habits/{b}/streak").json()["streak"] == 0
