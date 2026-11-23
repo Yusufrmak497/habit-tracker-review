@@ -99,5 +99,5 @@ def test_streak_crosses_month_boundary(monkeypatch):
 
 
 def test_streak_unknown_habit_404():
-    r = client.get("/habits/99999/streak")
+    r = client.get("/habits/1/streak")
     assert r.status_code == 404
