@@ -12,6 +12,7 @@ Test:
 
 import re
 import sqlite3
+import unicodedata
 from contextlib import closing
 from datetime import date
 from pathlib import Path
@@ -59,7 +60,9 @@ class HabitIn(BaseModel):
     @classmethod
     def name_not_blank(cls, v: str) -> str:
         v = v.strip()
-        if not v or not any(c.isprintable() and not c.isspace() for c in v):
+        # Needs at least one letter, number, punctuation or symbol: names made only of
+        # combining marks or format characters (e.g. U+034F, U+200B) would render blank.
+        if not any(unicodedata.category(c)[0] in "LNPS" for c in v):
             raise ValueError("habit name must not be empty")
         if len(v) > MAX_NAME_LENGTH:
             raise ValueError(f"habit name must be at most {MAX_NAME_LENGTH} characters")
@@ -72,7 +75,7 @@ class CheckinIn(BaseModel):
     @field_validator("day")
     @classmethod
     def day_is_iso_date(cls, v: str) -> str:
-        v = v.strip()
+        # No strip(): the submitted string itself must be exactly YYYY-MM-DD.
         if not ISO_DAY_RE.fullmatch(v):
             raise ValueError("day must be an ISO date in YYYY-MM-DD format, e.g. 2026-09-22")
         try:

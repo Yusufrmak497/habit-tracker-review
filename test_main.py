@@ -93,3 +93,22 @@ def test_create_habit_rejects_too_long_name():
 def test_checkin_rejects_wrong_json_type(body):
     hid = client.post("/habits", json={"name": "Typed"}).json()["id"]
     assert client.post(f"/habits/{hid}/checkin", json=body).status_code == 422
+
+
+@pytest.mark.parametrize("name", ["͏", "́", "​͏", " ͏ "])
+def test_create_habit_rejects_names_with_only_invisible_marks(name):
+    r = client.post("/habits", json={"name": name})
+    assert r.status_code == 422
+
+
+def test_create_habit_keeps_combining_marks_in_visible_names():
+    r = client.post("/habits", json={"name": "café"})
+    assert r.status_code == 200
+    assert r.json()["name"] == "café"
+
+
+@pytest.mark.parametrize("day", ["2026-09-22\n", " 2026-09-22", "2026-09-22 ", "\t2026-09-22"])
+def test_checkin_rejects_day_with_surrounding_whitespace(day):
+    habit_id = client.post("/habits", json={"name": "whitespace"}).json()["id"]
+    r = client.post(f"/habits/{habit_id}/checkin", json={"day": day})
+    assert r.status_code == 422
