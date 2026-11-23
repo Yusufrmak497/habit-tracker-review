@@ -73,7 +73,7 @@ comments are posted on GitHub when the repo is pushed.
 
 **Where the AI was worse**
 - **It missed the Unicode-digit bug.** To be fair, it reviewed the final diff, where the bug was already fixed.
-  But it also didn't flag the `\d` vs `[0-9]` question as a general risk. Our human review caught it by reading the regex.
+  But it also didn't flag the `\d` vs `[0-9]` question as a general risk. The manual review caught it by reading the regex.
 - **Noise.** 27 comments across two small PRs. About a third were nits: `response_model`, `{v!r}` quoting,
   "move evidence files out of the PR", and a version-difference note about `fromisoformat`. It even marked some
   of its own points as harmless. The `fromisoformat` point turned out to be irrelevant once the Validation PR
@@ -83,7 +83,7 @@ comments are posted on GitHub when the repo is pushed.
 - **Inconsistent verdicts.** Streak got REQUEST_CHANGES for issues of about the same weight as the Validation
   issues, which got APPROVE. The verdict alone isn't a reliable merge signal.
 
-**Accepted vs. rejected AI comments:** I accepted 6: year boundary, cross-habit test, documenting the streak
+**Accepted vs. rejected AI comments:** I accepted 7: year boundary, cross-habit test, using `99999` for the 404 test, documenting the streak
 semantics, invisible names, max length, `fullmatch`/wrong-type tests. I rejected or deferred the rest (typing `day` as
 `datetime.date`, which changes the stored value path; a lifespan hook for `init_db`; `response_model`; stylistic nits),
 each for a stated reason.
