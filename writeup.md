@@ -24,8 +24,8 @@ ended with `✖ guardrails FAILED` and exit code 1.
 ## 2. The two PRs (Part II)
 | PR | Branch | Agent's one-shot commit | Review-fix commits | Tests |
 |---|---|---|---|---|
-| Streak (Task 1) | `feature/streak` | `edff38f` | `f22b2e8`, `3ae1d42` | 13 passed |
-| Validation (Task 2) | `feature/validation` | `34c1d0b` | `8c5a7be`, `fb66396` | 24 passed |
+| [#1 Streak (Task 1)](https://github.com/Yusufrmak497/habit-tracker-review/pull/1) | `feature/streak` | `edff38f` | `f22b2e8`, `3ae1d42` | 13 passed |
+| [#2 Validation (Task 2)](https://github.com/Yusufrmak497/habit-tracker-review/pull/2) | `feature/validation` | `34c1d0b` | `8c5a7be`, `fb66396` | 24 passed |
 
 The PR descriptions (problem, approach, testing, tradeoffs) are in [`docs/prs/`](docs/prs/).
 The one-shot prompts are in `evidence/prompt-*.txt`. Each prompt was the task text from `docs/TASKS.md`
@@ -53,8 +53,9 @@ plus "run scripts/check.sh until it passes, do not commit".
 PR diff (`git diff main...HEAD`). It produced GitHub-style `file:line [severity]` comments. The full output is in
 [`evidence/ai-review-streak.md`](evidence/ai-review-streak.md) and
 [`evidence/ai-review-validation.md`](evidence/ai-review-validation.md).
-The default, Graphite Diamond, needs its GitHub app installed through a browser sign-up. The PRs and these
-comments are posted on GitHub when the repo is pushed.
+The default, Graphite Diamond, needs its GitHub app installed through a browser sign-up. The same comments are posted on
+[PR #1](https://github.com/Yusufrmak497/habit-tracker-review/pull/1) and
+[PR #2](https://github.com/Yusufrmak497/habit-tracker-review/pull/2).
 
 **Verdicts:** Streak → `REQUEST_CHANGES` (14 comments). Validation → `APPROVE` (13 comments).
 
