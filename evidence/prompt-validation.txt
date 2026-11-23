@@ -1,0 +1,1 @@
+Implement this task in main.py and add tests in test_main.py: "Validation — reject empty habit names and malformed day values on POST /habits / checkin with a 422/400 and a clear message." Run scripts/check.sh until it passes. Do not commit.

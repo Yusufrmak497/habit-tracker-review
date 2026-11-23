@@ -74,3 +74,10 @@ def test_checkin_accepts_leap_day():
     hid = client.post("/habits", json={"name": "Run"}).json()["id"]
     r = client.post(f"/habits/{hid}/checkin", json={"day": "2028-02-29"})
     assert r.status_code == 200
+
+
+def test_checkin_rejects_non_ascii_digits():
+    hid = client.post("/habits", json={"name": "Read"}).json()["id"]
+    r = client.post(f"/habits/{hid}/checkin", json={"day": "٢٠٢٦-٠٩-٢٢"})
+    assert r.status_code == 422
+    assert "YYYY-MM-DD" in _error_messages(r)
