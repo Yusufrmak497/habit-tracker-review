@@ -48,6 +48,7 @@ def init_db() -> None:
 init_db()
 
 
+MAX_NAME_LENGTH = 100
 ISO_DAY_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 
 
@@ -58,8 +59,10 @@ class HabitIn(BaseModel):
     @classmethod
     def name_not_blank(cls, v: str) -> str:
         v = v.strip()
-        if not v:
+        if not v or not any(c.isprintable() and not c.isspace() for c in v):
             raise ValueError("habit name must not be empty")
+        if len(v) > MAX_NAME_LENGTH:
+            raise ValueError(f"habit name must be at most {MAX_NAME_LENGTH} characters")
         return v
 
 
@@ -70,7 +73,7 @@ class CheckinIn(BaseModel):
     @classmethod
     def day_is_iso_date(cls, v: str) -> str:
         v = v.strip()
-        if not ISO_DAY_RE.match(v):
+        if not ISO_DAY_RE.fullmatch(v):
             raise ValueError("day must be an ISO date in YYYY-MM-DD format, e.g. 2026-09-22")
         try:
             date.fromisoformat(v)

@@ -32,7 +32,7 @@ def _error_messages(response) -> str:
     return " ".join(e["msg"] for e in response.json()["detail"])
 
 
-@pytest.mark.parametrize("name", ["", "   ", "\t\n"])
+@pytest.mark.parametrize("name", ["", "   ", "\t\n", "\u200b", "\u200b\u200d"])
 def test_create_habit_rejects_empty_name(name):
     r = client.post("/habits", json={"name": name})
     assert r.status_code == 422
@@ -81,3 +81,15 @@ def test_checkin_rejects_non_ascii_digits():
     r = client.post(f"/habits/{hid}/checkin", json={"day": "٢٠٢٦-٠٩-٢٢"})
     assert r.status_code == 422
     assert "YYYY-MM-DD" in _error_messages(r)
+
+
+def test_create_habit_rejects_too_long_name():
+    r = client.post("/habits", json={"name": "x" * 101})
+    assert r.status_code == 422
+    assert "at most 100 characters" in _error_messages(r)
+
+
+@pytest.mark.parametrize("body", [{"day": 20260922}, {"day": None}])
+def test_checkin_rejects_wrong_json_type(body):
+    hid = client.post("/habits", json={"name": "Typed"}).json()["id"]
+    assert client.post(f"/habits/{hid}/checkin", json=body).status_code == 422
